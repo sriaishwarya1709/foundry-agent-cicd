@@ -1,0 +1,14 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Invoke Foundry web agent",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/deploy_agent.py",
+      "args": ["invoke"],
+      "console": "integratedTerminal",
+      "envFile": "${workspaceFolder}/.env"
+    }
+  ]
+}

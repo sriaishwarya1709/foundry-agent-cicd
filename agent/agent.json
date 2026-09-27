@@ -1,0 +1,12 @@
+{
+  "name": "web-research-agent",
+  "description": "A concise research assistant that grounds current answers with web citations.",
+  "instructions_file": "instructions.md",
+  "web_search": {
+    "country": "US",
+    "city": "Seattle",
+    "region": "Washington",
+    "search_context_size": "medium",
+    "external_web_access": true
+  }
+}

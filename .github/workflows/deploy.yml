@@ -1,0 +1,69 @@
+name: Provision and promote Foundry agent
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: azd environment name
+        required: true
+        default: demo
+      project_names:
+        description: JSON array of Foundry project names
+        required: true
+        default: '["dev","test","prod"]'
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: pytest -q
+      - uses: azure/cli@v2
+        with:
+          inlineScript: az bicep build --file infra/main.bicep
+
+  deploy:
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment || 'demo' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - uses: Azure/setup-azd@v2
+      - name: Authenticate azd with GitHub OIDC
+        run: >-
+          azd auth login
+          --client-id "${{ vars.AZURE_CLIENT_ID }}"
+          --federated-credential-provider github
+          --tenant-id "${{ vars.AZURE_TENANT_ID }}"
+      - name: Configure azd environment
+        shell: bash
+        env:
+          PROJECT_NAMES: ${{ inputs.project_names || '["dev","test","prod"]' }}
+        run: |
+          azd env new "${{ inputs.environment || 'demo' }}" --no-prompt || azd env select "${{ inputs.environment || 'demo' }}"
+          azd env set AZURE_SUBSCRIPTION_ID "${{ vars.AZURE_SUBSCRIPTION_ID }}"
+          azd env set AZURE_LOCATION "${{ vars.AZURE_LOCATION }}"
+          azd env set AZURE_PRINCIPAL_ID "${{ vars.AZURE_PRINCIPAL_ID }}"
+          azd env set AZURE_PRINCIPAL_TYPE ServicePrincipal
+          azd env set AZURE_AI_PROJECT_NAMES_JSON "$PROJECT_NAMES"
+      - name: Provision and promote
+        run: azd up --no-prompt
