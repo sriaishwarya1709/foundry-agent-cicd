@@ -69,6 +69,10 @@ def project_endpoints(environment: dict[str, str] | None = None) -> list[str]:
     ]
 
 
+def deployment_endpoints(endpoints: Iterable[str], project: str | None) -> list[str]:
+    return [project] if project else list(endpoints)
+
+
 def create_agent_version(client: AIProjectClient, config: AgentConfig, model: str) -> Any:
     return client.agents.create_version(
         agent_name=config.name,
@@ -128,7 +132,7 @@ def invoke(endpoint: str, prompt: str, config: AgentConfig) -> None:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Promote or invoke the Foundry prompt agent.")
     parser.add_argument("command", choices=("deploy", "invoke"))
-    parser.add_argument("--project", help="Project endpoint for invoke; defaults to the first configured project.")
+    parser.add_argument("--project", help="Project endpoint; deploy uses all configured projects when omitted.")
     parser.add_argument("--prompt", default="What are the latest Microsoft Foundry agent updates?")
     return parser.parse_args()
 
@@ -139,7 +143,7 @@ def main() -> None:
     endpoints = project_endpoints()
     model = os.environ.get("AZURE_AI_MODEL_DEPLOYMENT_NAME", "gpt-4.1-mini")
     if args.command == "deploy":
-        deploy(endpoints, model, config)
+        deploy(deployment_endpoints(endpoints, args.project), model, config)
     else:
         invoke(args.project or endpoints[0], args.prompt, config)
 

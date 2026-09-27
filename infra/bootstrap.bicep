@@ -15,8 +15,12 @@ param githubOwner string
 @description('GitHub repository name.')
 param githubRepository string
 
-@description('GitHub Environment referenced by the deployment workflow.')
-param githubEnvironment string = 'demo'
+@description('GitHub Environments referenced by the staged deployment workflow.')
+param githubEnvironments array = [
+  'dev'
+  'test'
+  'prod'
+]
 
 var contributorRoleId = subscriptionResourceId(
   'Microsoft.Authorization/roleDefinitions',
@@ -49,7 +53,7 @@ module githubIdentity 'github-identity.bicep' = {
     identityName: identityName
     githubOwner: githubOwner
     githubRepository: githubRepository
-    githubEnvironment: githubEnvironment
+    githubEnvironments: githubEnvironments
   }
 }
 

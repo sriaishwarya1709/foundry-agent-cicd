@@ -62,7 +62,7 @@ gh auth login
 .\scripts\bootstrap-github.ps1
 ```
 
-The script deploys a user-assigned managed identity, creates a federated credential scoped to the `demo` GitHub Environment, grants the deployment roles, and configures these GitHub environment variables automatically:
+The script deploys a user-assigned managed identity, creates federated credentials scoped to the `dev`, `test`, and `prod` GitHub Environments, grants the deployment roles, and configures these GitHub environment variables in every stage automatically:
 
 | Variable | Purpose |
 | --- | --- |
@@ -78,11 +78,13 @@ To target another repository, environment, identity name, or region, pass the co
 .\scripts\bootstrap-github.ps1 `
   -GitHubOwner contoso `
   -GitHubRepository foundry-agent-cicd `
-  -GitHubEnvironment production `
+  -GitHubEnvironments dev,test,prod `
   -Location eastus2
 ```
 
-The workflow validates tests and Bicep, provisions with `azd`, and promotes the agent to the requested JSON list of projects. The bootstrap grants Contributor and Role Based Access Control Administrator at subscription scope because the workflow creates a resource group and project-level role assignments. For a production customer deployment, pre-create the target resource group and narrow both assignments to that scope.
+The workflow validates tests and Bicep, then runs three sequential jobs: `Deploy dev`, `Deploy test`, and `Deploy prod`. All jobs target one shared azd environment and Foundry account, but each promotes the agent only to its matching Foundry project. Configure required reviewers on the `test` or `prod` GitHub Environment to add approval gates.
+
+The bootstrap grants Contributor and Role Based Access Control Administrator at subscription scope because the workflow creates a resource group and project-level role assignments. For a production customer deployment, pre-create the target resource group and narrow both assignments to that scope.
 
 For customer handoff, fork the repository, replace the GitHub Environment variables, review the Bing Grounding terms/data-boundary notice for web search, and choose a model/region with available quota.
 

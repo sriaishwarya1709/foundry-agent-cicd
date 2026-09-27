@@ -12,4 +12,9 @@ if (-not (Test-Path '.venv')) {
 }
 
 & .\.venv\Scripts\python.exe -m pip install --disable-pip-version-check -r requirements.txt
-& .\.venv\Scripts\python.exe scripts\deploy_agent.py deploy
+$deployArguments = @('scripts\deploy_agent.py', 'deploy')
+if ($env:AZURE_AI_DEPLOY_PROJECT) {
+    $projectEndpoint = "https://$($env:AZURE_AI_ACCOUNT_NAME).services.ai.azure.com/api/projects/$($env:AZURE_AI_DEPLOY_PROJECT)"
+    $deployArguments += @('--project', $projectEndpoint)
+}
+& .\.venv\Scripts\python.exe @deployArguments

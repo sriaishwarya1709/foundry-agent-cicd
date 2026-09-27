@@ -3,14 +3,10 @@ name: Provision and promote Foundry agent
 on:
   workflow_dispatch:
     inputs:
-      environment:
-        description: azd environment name
+      azure_environment_name:
+        description: Shared azd environment name
         required: true
-        default: demo
-      project_names:
-        description: JSON array of Foundry project names
-        required: true
-        default: '["dev","test","prod"]'
+        default: foundry-demo
   push:
     branches: [main]
 
@@ -35,10 +31,11 @@ jobs:
             az bicep build --file infra/main.bicep
             az bicep build --file infra/bootstrap.bicep
 
-  deploy:
+  deploy-dev:
+    name: Deploy dev
     needs: validate
     runs-on: ubuntu-latest
-    environment: ${{ inputs.environment || 'demo' }}
+    environment: dev
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -56,16 +53,82 @@ jobs:
           --client-id "${{ vars.AZURE_CLIENT_ID }}"
           --federated-credential-provider github
           --tenant-id "${{ vars.AZURE_TENANT_ID }}"
-      - name: Configure azd environment
+      - name: Provision and promote dev
         shell: bash
-        env:
-          PROJECT_NAMES: ${{ inputs.project_names || '["dev","test","prod"]' }}
         run: |
-          azd env new "${{ inputs.environment || 'demo' }}" --no-prompt || azd env select "${{ inputs.environment || 'demo' }}"
+          azd env new "${{ inputs.azure_environment_name || 'foundry-demo' }}" --no-prompt
           azd env set AZURE_SUBSCRIPTION_ID "${{ vars.AZURE_SUBSCRIPTION_ID }}"
           azd env set AZURE_LOCATION "${{ vars.AZURE_LOCATION }}"
           azd env set AZURE_PRINCIPAL_ID "${{ vars.AZURE_PRINCIPAL_ID }}"
           azd env set AZURE_PRINCIPAL_TYPE ServicePrincipal
-          azd env set AZURE_AI_PROJECT_NAMES_JSON "$PROJECT_NAMES"
-      - name: Provision and promote
-        run: azd up --no-prompt
+          azd env set AZURE_AI_PROJECT_NAMES_JSON '["dev","test","prod"]'
+          azd env set AZURE_AI_DEPLOY_PROJECT dev
+          azd up --no-prompt
+
+  deploy-test:
+    name: Deploy test
+    needs: deploy-dev
+    runs-on: ubuntu-latest
+    environment: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - uses: Azure/setup-azd@v2
+      - name: Authenticate azd with GitHub OIDC
+        run: >-
+          azd auth login
+          --client-id "${{ vars.AZURE_CLIENT_ID }}"
+          --federated-credential-provider github
+          --tenant-id "${{ vars.AZURE_TENANT_ID }}"
+      - name: Provision and promote test
+        shell: bash
+        run: |
+          azd env new "${{ inputs.azure_environment_name || 'foundry-demo' }}" --no-prompt
+          azd env set AZURE_SUBSCRIPTION_ID "${{ vars.AZURE_SUBSCRIPTION_ID }}"
+          azd env set AZURE_LOCATION "${{ vars.AZURE_LOCATION }}"
+          azd env set AZURE_PRINCIPAL_ID "${{ vars.AZURE_PRINCIPAL_ID }}"
+          azd env set AZURE_PRINCIPAL_TYPE ServicePrincipal
+          azd env set AZURE_AI_PROJECT_NAMES_JSON '["dev","test","prod"]'
+          azd env set AZURE_AI_DEPLOY_PROJECT test
+          azd up --no-prompt
+
+  deploy-prod:
+    name: Deploy prod
+    needs: deploy-test
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - uses: Azure/setup-azd@v2
+      - name: Authenticate azd with GitHub OIDC
+        run: >-
+          azd auth login
+          --client-id "${{ vars.AZURE_CLIENT_ID }}"
+          --federated-credential-provider github
+          --tenant-id "${{ vars.AZURE_TENANT_ID }}"
+      - name: Provision and promote prod
+        shell: bash
+        run: |
+          azd env new "${{ inputs.azure_environment_name || 'foundry-demo' }}" --no-prompt
+          azd env set AZURE_SUBSCRIPTION_ID "${{ vars.AZURE_SUBSCRIPTION_ID }}"
+          azd env set AZURE_LOCATION "${{ vars.AZURE_LOCATION }}"
+          azd env set AZURE_PRINCIPAL_ID "${{ vars.AZURE_PRINCIPAL_ID }}"
+          azd env set AZURE_PRINCIPAL_TYPE ServicePrincipal
+          azd env set AZURE_AI_PROJECT_NAMES_JSON '["dev","test","prod"]'
+          azd env set AZURE_AI_DEPLOY_PROJECT prod
+          azd up --no-prompt

@@ -2,7 +2,12 @@ import json
 from pathlib import Path
 from unittest.mock import Mock
 
-from scripts.deploy_agent import create_agent_version, load_config, project_endpoints
+from scripts.deploy_agent import (
+    create_agent_version,
+    deployment_endpoints,
+    load_config,
+    project_endpoints,
+)
 
 
 def test_load_config_reads_instructions(tmp_path: Path) -> None:
@@ -48,6 +53,13 @@ def test_project_endpoints_builds_each_project() -> None:
         "https://contoso-foundry.services.ai.azure.com/api/projects/test",
         "https://contoso-foundry.services.ai.azure.com/api/projects/prod",
     ]
+
+
+def test_deployment_endpoints_selects_only_requested_stage() -> None:
+    endpoints = ["dev-endpoint", "test-endpoint", "prod-endpoint"]
+
+    assert deployment_endpoints(endpoints, "test-endpoint") == ["test-endpoint"]
+    assert deployment_endpoints(endpoints, None) == endpoints
 
 
 def test_create_agent_version_enables_web_search() -> None:

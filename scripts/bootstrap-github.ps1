@@ -2,7 +2,7 @@
 param(
     [string]$GitHubOwner = 'sriaishwarya1709',
     [string]$GitHubRepository = 'foundry-agent-cicd',
-    [string]$GitHubEnvironment = 'demo',
+    [string[]]$GitHubEnvironments = @('dev', 'test', 'prod'),
     [string]$Location = 'eastus2',
     [string]$IdentityResourceGroupName = 'rg-github-identities',
     [string]$IdentityName = 'github-foundry-agent',
@@ -23,7 +23,8 @@ if (-not $account.id) {
     throw 'Azure CLI is not authenticated. Run az login first.'
 }
 
-$deploymentName = "github-identity-$GitHubEnvironment"
+$githubEnvironmentsJson = ConvertTo-Json -InputObject $GitHubEnvironments -Compress
+$deploymentName = 'github-identity-bootstrap'
 $deployment = az deployment sub create `
     --name $deploymentName `
     --location $Location `
@@ -34,7 +35,7 @@ $deployment = az deployment sub create `
         identityName=$IdentityName `
         githubOwner=$GitHubOwner `
         githubRepository=$GitHubRepository `
-        githubEnvironment=$GitHubEnvironment `
+        githubEnvironments=$githubEnvironmentsJson `
     --output json | ConvertFrom-Json
 
 $outputs = $deployment.properties.outputs
@@ -49,16 +50,18 @@ $values = [ordered]@{
 if (-not $SkipGitHubConfiguration) {
     gh auth status | Out-Null
     $repository = "$GitHubOwner/$GitHubRepository"
-    gh api `
-        --method PUT `
-        "repos/$repository/environments/$GitHubEnvironment" | Out-Null
-    foreach ($entry in $values.GetEnumerator()) {
-        gh variable set $entry.Key `
-            --env $GitHubEnvironment `
-            --repo $repository `
-            --body $entry.Value
+    foreach ($githubEnvironment in $GitHubEnvironments) {
+        gh api `
+            --method PUT `
+            "repos/$repository/environments/$githubEnvironment" | Out-Null
+        foreach ($entry in $values.GetEnumerator()) {
+            gh variable set $entry.Key `
+                --env $githubEnvironment `
+                --repo $repository `
+                --body $entry.Value
+        }
+        Write-Host "Configured GitHub environment '$githubEnvironment' in $repository."
     }
-    Write-Host "Configured GitHub environment '$GitHubEnvironment' in $repository."
 }
 
 $values.GetEnumerator() | Format-Table -AutoSize
