@@ -54,7 +54,15 @@ You can also press `F5` in VS Code after creating a workspace-root `.env` from `
 
 ## GitHub Actions setup
 
-Create a GitHub Environment such as `demo`, then add these environment variables:
+Run the one-time bootstrap while signed into Azure and GitHub CLI:
+
+```powershell
+az login
+gh auth login
+.\scripts\bootstrap-github.ps1
+```
+
+The script deploys a user-assigned managed identity, creates a federated credential scoped to the `demo` GitHub Environment, grants the deployment roles, and configures these GitHub environment variables automatically:
 
 | Variable | Purpose |
 | --- | --- |
@@ -64,7 +72,17 @@ Create a GitHub Environment such as `demo`, then add these environment variables
 | `AZURE_SUBSCRIPTION_ID` | Target subscription |
 | `AZURE_LOCATION` | Region such as `eastus2` |
 
-Configure a federated credential on that identity for the GitHub repository/environment and grant it permission to deploy resources and assign the Foundry User role. The workflow validates tests and Bicep, provisions with `azd`, and promotes the agent to the requested JSON list of projects.
+To target another repository, environment, identity name, or region, pass the corresponding script parameters. Use `-SkipGitHubConfiguration` to create the Azure identity and print its values without changing GitHub settings.
+
+```powershell
+.\scripts\bootstrap-github.ps1 `
+  -GitHubOwner contoso `
+  -GitHubRepository foundry-agent-cicd `
+  -GitHubEnvironment production `
+  -Location eastus2
+```
+
+The workflow validates tests and Bicep, provisions with `azd`, and promotes the agent to the requested JSON list of projects. The bootstrap grants Contributor and Role Based Access Control Administrator at subscription scope because the workflow creates a resource group and project-level role assignments. For a production customer deployment, pre-create the target resource group and narrow both assignments to that scope.
 
 For customer handoff, fork the repository, replace the GitHub Environment variables, review the Bing Grounding terms/data-boundary notice for web search, and choose a model/region with available quota.
 

@@ -31,7 +31,9 @@ jobs:
       - run: pytest -q
       - uses: azure/cli@v2
         with:
-          inlineScript: az bicep build --file infra/main.bicep
+          inlineScript: |
+            az bicep build --file infra/main.bicep
+            az bicep build --file infra/bootstrap.bicep
 
   deploy:
     needs: validate
