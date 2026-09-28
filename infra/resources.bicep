@@ -81,6 +81,7 @@ resource modelDeployment 'Microsoft.CognitiveServices/accounts/deployments@2025-
   }
 }
 
+@batchSize(1)
 resource projects 'Microsoft.CognitiveServices/accounts/projects@2025-06-01' = [for projectName in projectNames: {
   name: projectName
   parent: foundry
@@ -93,6 +94,9 @@ resource projects 'Microsoft.CognitiveServices/accounts/projects@2025-06-01' = [
     displayName: projectName
     description: 'Prompt agent promotion target for ${projectName}'
   }
+  dependsOn: [
+    modelDeployment
+  ]
 }]
 
 resource appInsightsConnections 'Microsoft.CognitiveServices/accounts/projects/connections@2025-04-01-preview' = [for (projectName, index) in projectNames: {
