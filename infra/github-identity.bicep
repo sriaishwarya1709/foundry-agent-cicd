@@ -13,6 +13,7 @@ resource identity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' 
   }
 }
 
+@batchSize(1)
 resource githubFederation 'Microsoft.ManagedIdentity/userAssignedIdentities/federatedIdentityCredentials@2023-01-31' = [for githubEnvironment in githubEnvironments: {
   name: 'github-${githubEnvironment}'
   parent: identity

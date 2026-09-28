@@ -59,7 +59,7 @@ Run the one-time bootstrap while signed into Azure and GitHub CLI:
 ```powershell
 az login
 gh auth login
-.\scripts\bootstrap-github.ps1
+.\scripts\bootstrap-github.ps1 -SubscriptionId '<subscription-id>'
 ```
 
 The script deploys a user-assigned managed identity, creates federated credentials scoped to the `dev`, `test`, and `prod` GitHub Environments, grants the deployment roles, and configures these GitHub environment variables in every stage automatically:
