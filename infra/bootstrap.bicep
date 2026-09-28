@@ -9,11 +9,8 @@ param identityResourceGroupName string = 'rg-github-identities'
 @description('Name of the user-assigned managed identity used by GitHub Actions.')
 param identityName string = 'github-foundry-agent'
 
-@description('GitHub repository owner.')
-param githubOwner string
-
-@description('GitHub repository name.')
-param githubRepository string
+@description('Repository subject prefix returned by the GitHub OIDC customization API.')
+param githubSubjectPrefix string
 
 @description('GitHub Environments referenced by the staged deployment workflow.')
 param githubEnvironments array = [
@@ -52,8 +49,7 @@ module githubIdentity 'github-identity.bicep' = {
   params: {
     location: location
     identityName: identityName
-    githubOwner: githubOwner
-    githubRepository: githubRepository
+    githubSubjectPrefix: githubSubjectPrefix
     githubEnvironments: githubEnvironments
   }
 }

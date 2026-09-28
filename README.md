@@ -62,7 +62,7 @@ gh auth login
 .\scripts\bootstrap-github.ps1 -SubscriptionId '<subscription-id>'
 ```
 
-The script deploys a user-assigned managed identity, creates federated credentials scoped to the `dev`, `test`, and `prod` GitHub Environments, grants the deployment roles, and configures these GitHub environment variables in every stage automatically:
+The script reads the repository's current OIDC subject format from GitHub, deploys a user-assigned managed identity, creates matching federated credentials scoped to the `dev`, `test`, and `prod` GitHub Environments, grants the deployment roles, and configures these GitHub environment variables in every stage automatically:
 
 | Variable | Purpose |
 | --- | --- |

@@ -4,6 +4,7 @@
 param(
     [string]$GitHubOwner = 'sriaishwarya1709',
     [string]$GitHubRepository = 'foundry-agent-cicd',
+    [string]$GitHubSubjectPrefix,
     [string[]]$GitHubEnvironments = @('dev', 'test', 'prod'),
     [string]$Location = 'eastus2',
     [string]$SubscriptionId,
@@ -18,7 +19,19 @@ $PSNativeCommandUseErrorActionPreference = $true
 if (-not (Get-Command 'az' -ErrorAction SilentlyContinue)) {
     throw "Required command 'az' was not found."
 }
-if (-not $SkipGitHubConfiguration -and -not (Get-Command 'gh' -ErrorAction SilentlyContinue)) {
+if (-not $GitHubSubjectPrefix) {
+    if (-not (Get-Command 'gh' -ErrorAction SilentlyContinue)) {
+        throw "Required command 'gh' was not found. Pass -GitHubSubjectPrefix to run without GitHub CLI."
+    }
+    gh auth status | Out-Null
+    $repository = "$GitHubOwner/$GitHubRepository"
+    $oidcConfiguration = gh api "repos/$repository/actions/oidc/customization/sub" | ConvertFrom-Json
+    $GitHubSubjectPrefix = $oidcConfiguration.sub_claim_prefix
+    if (-not $GitHubSubjectPrefix) {
+        $GitHubSubjectPrefix = "repo:$GitHubOwner/$GitHubRepository"
+    }
+}
+elseif (-not $SkipGitHubConfiguration -and -not (Get-Command 'gh' -ErrorAction SilentlyContinue)) {
     throw "Required command 'gh' was not found."
 }
 
@@ -41,8 +54,7 @@ $parameters = @{
         location                  = @{ value = $Location }
         identityResourceGroupName = @{ value = $IdentityResourceGroupName }
         identityName              = @{ value = $IdentityName }
-        githubOwner               = @{ value = $GitHubOwner }
-        githubRepository          = @{ value = $GitHubRepository }
+        githubSubjectPrefix       = @{ value = $GitHubSubjectPrefix }
         githubEnvironments        = @{ value = $GitHubEnvironments }
     }
 }

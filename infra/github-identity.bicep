@@ -1,7 +1,6 @@
 param location string
 param identityName string
-param githubOwner string
-param githubRepository string
+param githubSubjectPrefix string
 param githubEnvironments array
 
 resource identity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
@@ -22,7 +21,7 @@ resource githubFederation 'Microsoft.ManagedIdentity/userAssignedIdentities/fede
       'api://AzureADTokenExchange'
     ]
     issuer: 'https://token.actions.githubusercontent.com'
-    subject: 'repo:${githubOwner}/${githubRepository}:environment:${githubEnvironment}'
+    subject: '${githubSubjectPrefix}:environment:${githubEnvironment}'
   }
 }]
 
