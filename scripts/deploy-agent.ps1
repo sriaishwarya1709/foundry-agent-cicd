@@ -1,4 +1,5 @@
 $ErrorActionPreference = 'Stop'
+$PSNativeCommandUseErrorActionPreference = $true
 
 $values = azd env get-values | Out-String
 $values -split "`n" | ForEach-Object {

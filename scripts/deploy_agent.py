@@ -140,12 +140,13 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     config = load_config()
-    endpoints = project_endpoints()
     model = os.environ.get("AZURE_AI_MODEL_DEPLOYMENT_NAME", "gpt-4.1-mini")
     if args.command == "deploy":
-        deploy(deployment_endpoints(endpoints, args.project), model, config)
+        endpoints = [args.project] if args.project else project_endpoints()
+        deploy(endpoints, model, config)
     else:
-        invoke(args.project or endpoints[0], args.prompt, config)
+        endpoint = args.project or project_endpoints()[0]
+        invoke(endpoint, args.prompt, config)
 
 
 if __name__ == "__main__":
