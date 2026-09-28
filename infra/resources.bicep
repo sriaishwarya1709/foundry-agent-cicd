@@ -100,7 +100,7 @@ resource projects 'Microsoft.CognitiveServices/accounts/projects@2025-06-01' = [
 }]
 
 resource appInsightsConnections 'Microsoft.CognitiveServices/accounts/projects/connections@2025-04-01-preview' = [for (projectName, index) in projectNames: {
-  name: '${foundry.name}/${projectName}/${appInsightsName}'
+  name: '${foundry.name}/${projectName}/${index == 0 ? appInsightsName : '${appInsightsName}-${projectName}'}'
   properties: {
     category: 'AppInsights'
     target: appInsights.id
