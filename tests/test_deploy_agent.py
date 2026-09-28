@@ -1,10 +1,11 @@
 import json
 from pathlib import Path
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from scripts.deploy_agent import (
     create_agent_version,
     deployment_endpoints,
+    invoke,
     load_config,
     project_endpoints,
 )
@@ -73,3 +74,26 @@ def test_create_agent_version_enables_web_search() -> None:
     assert call.kwargs["agent_name"] == config.name
     assert call.kwargs["definition"].model == "gpt-4.1-mini"
     assert call.kwargs["definition"].tools[0].type == "web_search"
+
+
+@patch("scripts.deploy_agent.DefaultAzureCredential")
+@patch("scripts.deploy_agent.AIProjectClient")
+def test_invoke_references_latest_agent_version(
+    project_client_type: Mock, credential_type: Mock
+) -> None:
+    config = load_config()
+    project = project_client_type.return_value
+    project.agents.get.return_value.versions.latest.version = "7"
+    project.telemetry.get_application_insights_connection_string.return_value = None
+    project.get_openai_client.return_value.responses.create.return_value = Mock(
+        output_text="answer", output=[]
+    )
+
+    invoke("https://example.ai.azure.com/api/projects/prod", "question", config)
+
+    call = project.get_openai_client.return_value.responses.create.call_args
+    assert call.kwargs["extra_body"]["agent_reference"] == {
+        "name": config.name,
+        "version": "7",
+        "type": "agent_reference",
+    }

@@ -106,6 +106,7 @@ def deploy(endpoints: Iterable[str], model: str, config: AgentConfig) -> None:
 def invoke(endpoint: str, prompt: str, config: AgentConfig) -> None:
     credential = DefaultAzureCredential()
     project = AIProjectClient(endpoint=endpoint, credential=credential)
+    agent = project.agents.get(config.name)
     connection_string = project.telemetry.get_application_insights_connection_string()
     if connection_string:
         from azure.monitor.opentelemetry import configure_azure_monitor
@@ -117,7 +118,13 @@ def invoke(endpoint: str, prompt: str, config: AgentConfig) -> None:
     response = project.get_openai_client().responses.create(
         input=prompt,
         tool_choice="required",
-        extra_body={"agent_reference": {"name": config.name, "type": "agent_reference"}},
+        extra_body={
+            "agent_reference": {
+                "name": config.name,
+                "version": agent.versions.latest.version,
+                "type": "agent_reference",
+            }
+        },
     )
     print(response.output_text)
     for item in response.output:
