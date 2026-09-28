@@ -2,8 +2,8 @@
 
 [CmdletBinding()]
 param(
-    [string]$GitHubOwner = 'sriaishwarya1709',
-    [string]$GitHubRepository = 'foundry-agent-cicd',
+    [string]$GitHubOwner,
+    [string]$GitHubRepository,
     [string]$GitHubSubjectPrefix,
     [string[]]$GitHubEnvironments = @('dev', 'test', 'prod'),
     [string]$Location = 'eastus2',
@@ -18,6 +18,21 @@ $PSNativeCommandUseErrorActionPreference = $true
 
 if (-not (Get-Command 'az' -ErrorAction SilentlyContinue)) {
     throw "Required command 'az' was not found."
+}
+if (-not $GitHubOwner -or -not $GitHubRepository) {
+    if (-not (Get-Command 'gh' -ErrorAction SilentlyContinue)) {
+        throw "Required command 'gh' was not found. Pass both -GitHubOwner and -GitHubRepository."
+    }
+    $repositoryParts = (gh repo view --json nameWithOwner --jq '.nameWithOwner') -split '/', 2
+    if ($repositoryParts.Count -ne 2) {
+        throw 'Could not determine the GitHub repository from the current clone.'
+    }
+    if (-not $GitHubOwner) {
+        $GitHubOwner = $repositoryParts[0]
+    }
+    if (-not $GitHubRepository) {
+        $GitHubRepository = $repositoryParts[1]
+    }
 }
 if (-not $GitHubSubjectPrefix) {
     if (-not (Get-Command 'gh' -ErrorAction SilentlyContinue)) {
